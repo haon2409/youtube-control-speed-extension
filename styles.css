@@ -1,7 +1,7 @@
 #speed-indicator {
   position: fixed;
-  top: 10px;
-  left: 10px; /* Đổi từ right sang left */
+  top: 50px;
+  left: 10px;
   color: white;
   font-size: 14px;
   font-weight: bold;
@@ -9,4 +9,29 @@
   padding: 5px 10px;
   border-radius: 8px;
   z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer; /* Thêm con trỏ để báo hiệu nhấp được */
+}
+
+#speed-indicator .controls {
+  display: none;
+}
+
+#speed-indicator:hover .controls {
+  display: inline;
+}
+
+#speed-indicator button {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0 5px;
+}
+
+#speed-indicator button:hover {
+  color: #ccc;
 }

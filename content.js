@@ -8,7 +8,7 @@ function updateSpeed(speed) {
     video.playbackRate = speed;
     currentSpeed = speed;
     updateSpeedIndicator();
-    checkLiveCatchUp(video); // Kiểm tra ngay sau khi thay đổi tốc độ
+    checkLiveCatchUp(video);
   } else {
     console.log('Log: Không tìm thấy video để cập nhật tốc độ');
   }
@@ -19,43 +19,69 @@ function updateSpeedIndicator() {
   if (!speedIndicator) {
     speedIndicator = document.createElement('div');
     speedIndicator.id = 'speed-indicator';
+    
+    const speedText = document.createElement('span');
+    speedText.id = 'speed-text';
+    
+    const controls = document.createElement('div');
+    controls.className = 'controls';
+    
+    const decreaseBtn = document.createElement('button');
+    decreaseBtn.textContent = '<';
+    decreaseBtn.onclick = () => updateSpeed(Math.max(0.25, currentSpeed - 0.25));
+    
+    const increaseBtn = document.createElement('button');
+    increaseBtn.textContent = '>';
+    increaseBtn.onclick = () => updateSpeed(currentSpeed + 0.25);
+    
+    controls.appendChild(decreaseBtn);
+    controls.appendChild(increaseBtn);
+    speedIndicator.appendChild(speedText);
+    speedIndicator.appendChild(controls);
     document.body.appendChild(speedIndicator);
+    
+    // Thêm sự kiện nhấp để toggle tốc độ
+    speedText.onclick = (e) => {
+      e.stopPropagation(); // Ngăn nhấp lan ra controls
+      const newSpeed = currentSpeed === 1 ? lastSpeed : 1;
+      lastSpeed = currentSpeed;
+      updateSpeed(newSpeed);
+      console.log(`Log: Toggle tốc độ từ ${currentSpeed.toFixed(2)}x sang ${newSpeed.toFixed(2)}x`);
+    };
+    
     console.log('Log: Tạo mới speed-indicator');
   }
-  speedIndicator.textContent = `${currentSpeed.toFixed(2)}x`;
+  
+  const speedText = speedIndicator.querySelector('#speed-text');
+  speedText.textContent = `${currentSpeed.toFixed(2)}x`;
   console.log(`Log: Cập nhật speed-indicator với tốc độ: ${currentSpeed.toFixed(2)}x`);
 }
 
-// Kiểm tra livestream bắt kịp real-time
 function checkLiveCatchUp(video) {
-  if (currentSpeed <= 1) return; // Không cần kiểm tra nếu tốc độ <= 1
+  if (currentSpeed <= 1) return;
 
-  // Livestream thường có duration là Infinity hoặc rất lớn
-  const isLive = video.duration === Infinity || video.duration > 3600; // Giả định live nếu > 1 giờ
+  const isLive = video.duration === Infinity || video.duration > 3600;
   if (!isLive) return;
 
-  // Kiểm tra nếu gần real-time
   const buffered = video.buffered;
   if (buffered.length > 0) {
-    const bufferedEnd = buffered.end(buffered.length - 1); // Điểm cuối của buffer
+    const bufferedEnd = buffered.end(buffered.length - 1);
     const currentTime = video.currentTime;
     const timeToEnd = bufferedEnd - currentTime;
 
-    // Nếu còn dưới 2 giây để bắt kịp (có thể điều chỉnh)
     if (timeToEnd < 2) {
       console.log('Log: Livestream bắt kịp real-time, chuyển tốc độ về 1');
       updateSpeed(1);
     }
   }
 
-  // Tiếp tục kiểm tra trong lúc phát
   video.addEventListener('timeupdate', function handler() {
     const bufferedEnd = video.buffered.end(video.buffered.length - 1);
     const timeToEnd = bufferedEnd - video.currentTime;
     if (currentSpeed > 1 && timeToEnd < 2) {
       console.log('Log: Livestream bắt kịp real-time (timeupdate), chuyển tốc độ về 1');
       updateSpeed(1);
-      video.removeEventListener('timeupdate', handler); // Ngừng kiểm tra sau khi về 1
+      video.removeEventListener('timeupdate', handler);
     }
   });
 }
@@ -94,7 +120,7 @@ function monitorVideoChange() {
       console.log(`Log: Video thay đổi (loadedmetadata) - Nguồn mới: ${currentSrc}`);
       lastVideoSrc = currentSrc;
       updateSpeed(1);
-      checkLiveCatchUp(video); // Kiểm tra livestream ngay khi video mới tải
+      checkLiveCatchUp(video);
     }
   });
 }
