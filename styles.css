@@ -1,21 +1,12 @@
-#speed-display {
-  color: white;
-  font-size: 14px;
-  padding: 0 8px;
-  display: inline-block;
-  vertical-align: middle;
-  line-height: 48px;
-}
-
-#speed-effect {
+#speed-indicator {
   position: fixed;
-  bottom: 10px;
-  left: 10px;
+  top: 10px;
+  left: 10px; /* Đổi từ right sang left */
   color: white;
   font-size: 14px;
   font-weight: bold;
   background: rgba(0, 0, 0, 0.7);
-  padding: 10px 20px;
+  padding: 5px 10px;
   border-radius: 8px;
-  z-index: 1000;
+  z-index: 9999;
 }
