@@ -1,6 +1,6 @@
 #speed-indicator {
   position: fixed;
-  top: 50px;
+  top: 45px;
   left: 10px;
   color: white;
   font-size: 14px;
@@ -12,26 +12,47 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  cursor: pointer; /* Thêm con trỏ để báo hiệu nhấp được */
+  cursor: pointer;
+  transition: padding 0.2s ease; /* Hiệu ứng mở rộng mượt */
 }
 
 #speed-indicator .controls {
-  display: none;
+  width: 0; /* Thu gọn khi không hover */
+  overflow: hidden; /* Ẩn nội dung khi width = 0 */
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 5px;
+  transition: width 0.2s ease; /* Hiệu ứng mở rộng */
 }
 
 #speed-indicator:hover .controls {
-  display: inline;
+  width: 58px; /* Độ rộng đủ cho 2 nút (24px mỗi nút + 5px gap + padding) */
 }
 
 #speed-indicator button {
-  background: none;
-  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   color: white;
-  font-size: 14px;
+  font-size: 16px;
+  font-weight: bold;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
   cursor: pointer;
-  padding: 0 5px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
 }
 
 #speed-indicator button:hover {
-  color: #ccc;
+  background: rgba(255, 255, 255, 0.3);
+  color: white;
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+#speed-indicator button:active {
+  background: rgba(255, 255, 255, 0.5);
 }
