@@ -1,0 +1,21 @@
+#speed-display {
+  color: white;
+  font-size: 14px;
+  padding: 0 8px;
+  display: inline-block;
+  vertical-align: middle;
+  line-height: 48px;
+}
+
+#speed-effect {
+  position: fixed;
+  bottom: 10px;
+  left: 10px;
+  color: white;
+  font-size: 14px;
+  font-weight: bold;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 10px 20px;
+  border-radius: 8px;
+  z-index: 1000;
+}
