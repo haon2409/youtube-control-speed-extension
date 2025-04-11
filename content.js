@@ -14,6 +14,29 @@ function updateSpeed(speed) {
   }
 }
 
+function updateSpeedIndicatorPosition() {
+  const speedIndicator = document.getElementById('speed-indicator');
+  if (!speedIndicator) return;
+
+  if (document.fullscreenElement) {
+    speedIndicator.classList.add('fullscreen');
+    return;
+  }
+
+  speedIndicator.classList.remove('fullscreen');
+  const video = document.querySelector('video');
+  if (video) {
+    const videoRect = video.getBoundingClientRect();
+    const parent = video.parentElement;
+    const parentRect = parent.getBoundingClientRect();
+
+    // Căn trái với khung video
+    speedIndicator.style.left = `${parentRect.left}px`;
+    // Cạnh dưới khung tốc độ sát cạnh trên khung video
+    speedIndicator.style.top = `${parentRect.top - speedIndicator.offsetHeight}px`;
+  }
+}
+
 function updateSpeedIndicator() {
   let speedIndicator = document.getElementById('speed-indicator');
   if (!speedIndicator) {
@@ -53,6 +76,7 @@ function updateSpeedIndicator() {
   
   const speedText = speedIndicator.querySelector('#speed-text');
   speedText.textContent = `${currentSpeed.toFixed(2)}`;
+  updateSpeedIndicatorPosition();
   console.log(`Log: Cập nhật speed-indicator với tốc độ: ${currentSpeed.toFixed(2)}`);
 }
 
@@ -86,14 +110,7 @@ function checkLiveCatchUp(video) {
 }
 
 function toggleFullscreenClass() {
-  const speedIndicator = document.getElementById('speed-indicator');
-  if (speedIndicator) {
-    if (document.fullscreenElement) {
-      speedIndicator.classList.add('fullscreen');
-    } else {
-      speedIndicator.classList.remove('fullscreen');
-    }
-  }
+  updateSpeedIndicatorPosition();
 }
 
 document.addEventListener('keydown', (e) => {
@@ -131,6 +148,7 @@ function monitorVideoChange() {
       lastVideoSrc = currentSrc;
       updateSpeed(1);
       checkLiveCatchUp(video);
+      updateSpeedIndicatorPosition();
     }
   });
 }
@@ -143,6 +161,7 @@ window.addEventListener('load', () => {
 });
 
 document.addEventListener('fullscreenchange', toggleFullscreenClass);
+window.addEventListener('resize', updateSpeedIndicatorPosition);
 
 const observer = new MutationObserver(() => {
   const video = document.querySelector('video');
@@ -150,6 +169,7 @@ const observer = new MutationObserver(() => {
     video.dataset.speedMonitored = 'true';
     console.log('Log: Phát hiện video mới trong DOM');
     monitorVideoChange();
+    updateSpeedIndicatorPosition();
   }
 });
 observer.observe(document.body, { childList: true, subtree: true });

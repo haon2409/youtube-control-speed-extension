@@ -1,12 +1,10 @@
 #speed-indicator {
-  position: fixed;
-  top: 45px;
-  left: 10px;
+  position: absolute; /* Căn theo khung video khi không full-screen */
   color: white;
   font-size: 14px;
   font-weight: bold;  
   background-color: var(--yt-spec-additive-background);  
-  padding: 5px 5px 5px 10px;
+  padding: 5px 2px 5px 10px;  
   border-radius: 8px;
   z-index: 9999;
   display: flex;
@@ -17,8 +15,9 @@
 }
 
 #speed-indicator.fullscreen {
-  top: 55px; /* Cách đỉnh 10px + giả sử title cao ~40px */
-  left: 10px; /* Sát lề trái 10px */
+  position: fixed!important;
+  top: 55px!important; /* Như bạn xác nhận */
+  left: 10px!important;  
 }
 
 #speed-indicator .controls {
