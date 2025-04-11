@@ -3,6 +3,11 @@
   "name": "Video Speed Controller",
   "version": "1.0",
   "description": "Control video speed with keyboard shortcuts on any website",
+  "action": {    
+    "default_icon": {
+      "64": "icon64.png"
+    }
+  },
   "icons": {
     "64": "icon64.png"
   },

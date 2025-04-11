@@ -4,30 +4,35 @@
   left: 10px;
   color: white;
   font-size: 14px;
-  font-weight: bold;
-  background: rgba(0, 0, 0, 0.7);
-  padding: 5px 10px;
+  font-weight: bold;  
+  background-color: var(--yt-spec-additive-background);  
+  padding: 5px 5px 5px 10px;
   border-radius: 8px;
   z-index: 9999;
   display: flex;
   align-items: center;
   gap: 8px;
   cursor: pointer;
-  transition: padding 0.2s ease; /* Hiệu ứng mở rộng mượt */
+  transition: padding 0.2s ease;
+}
+
+#speed-indicator.fullscreen {
+  top: 55px; /* Cách đỉnh 10px + giả sử title cao ~40px */
+  left: 10px; /* Sát lề trái 10px */
 }
 
 #speed-indicator .controls {
-  width: 0; /* Thu gọn khi không hover */
-  overflow: hidden; /* Ẩn nội dung khi width = 0 */
+  width: 0;
+  overflow: hidden;
   display: flex;
   flex-direction: row;
   align-items: center;
   gap: 5px;
-  transition: width 0.2s ease; /* Hiệu ứng mở rộng */
+  transition: width 0.2s ease;
 }
 
 #speed-indicator:hover .controls {
-  width: 58px; /* Độ rộng đủ cho 2 nút (24px mỗi nút + 5px gap + padding) */
+  width: 58px;
 }
 
 #speed-indicator button {

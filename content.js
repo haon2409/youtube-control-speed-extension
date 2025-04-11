@@ -40,21 +40,20 @@ function updateSpeedIndicator() {
     speedIndicator.appendChild(controls);
     document.body.appendChild(speedIndicator);
     
-    // Thêm sự kiện nhấp để toggle tốc độ
     speedText.onclick = (e) => {
-      e.stopPropagation(); // Ngăn nhấp lan ra controls
+      e.stopPropagation();
       const newSpeed = currentSpeed === 1 ? lastSpeed : 1;
       lastSpeed = currentSpeed;
       updateSpeed(newSpeed);
-      console.log(`Log: Toggle tốc độ từ ${currentSpeed.toFixed(2)}x sang ${newSpeed.toFixed(2)}x`);
+      console.log(`Log: Toggle tốc độ từ ${currentSpeed.toFixed(2)}x sang ${newSpeed.toFixed(2)}`);
     };
     
     console.log('Log: Tạo mới speed-indicator');
   }
   
   const speedText = speedIndicator.querySelector('#speed-text');
-  speedText.textContent = `${currentSpeed.toFixed(2)}x`;
-  console.log(`Log: Cập nhật speed-indicator với tốc độ: ${currentSpeed.toFixed(2)}x`);
+  speedText.textContent = `${currentSpeed.toFixed(2)}`;
+  console.log(`Log: Cập nhật speed-indicator với tốc độ: ${currentSpeed.toFixed(2)}`);
 }
 
 function checkLiveCatchUp(video) {
@@ -84,6 +83,17 @@ function checkLiveCatchUp(video) {
       video.removeEventListener('timeupdate', handler);
     }
   });
+}
+
+function toggleFullscreenClass() {
+  const speedIndicator = document.getElementById('speed-indicator');
+  if (speedIndicator) {
+    if (document.fullscreenElement) {
+      speedIndicator.classList.add('fullscreen');
+    } else {
+      speedIndicator.classList.remove('fullscreen');
+    }
+  }
 }
 
 document.addEventListener('keydown', (e) => {
@@ -131,6 +141,8 @@ window.addEventListener('load', () => {
   lastVideoSrc = document.querySelector('video')?.currentSrc || window.location.href;
   monitorVideoChange();
 });
+
+document.addEventListener('fullscreenchange', toggleFullscreenClass);
 
 const observer = new MutationObserver(() => {
   const video = document.querySelector('video');
