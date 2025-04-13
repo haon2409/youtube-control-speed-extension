@@ -18,22 +18,41 @@ function updateSpeedIndicatorPosition() {
   const speedIndicator = document.getElementById('speed-indicator');
   if (!speedIndicator) return;
 
+  const isYouTube = window.location.hostname.includes('youtube.com');
+
   if (document.fullscreenElement) {
     speedIndicator.classList.add('fullscreen');
+    speedIndicator.style.position = 'fixed';
+    speedIndicator.style.left = '10px';
+    speedIndicator.style.top = '10px';
+    // Giữ class non-youtube nếu không phải YouTube để áp dụng kiểu nền đỏ
+    if (!isYouTube) {
+      speedIndicator.classList.add('non-youtube');
+    } else {
+      speedIndicator.classList.remove('non-youtube');
+    }
     return;
   }
 
   speedIndicator.classList.remove('fullscreen');
-  const video = document.querySelector('video');
-  if (video) {
-    const videoRect = video.getBoundingClientRect();
-    const parent = video.parentElement;
-    const parentRect = parent.getBoundingClientRect();
-
-    // Căn trái với khung video
-    speedIndicator.style.left = `${parentRect.left}px`;
-    // Cạnh dưới khung tốc độ sát cạnh trên khung video
-    speedIndicator.style.top = `${parentRect.top - speedIndicator.offsetHeight}px`;
+  if (isYouTube) {
+    // Logic hiện tại cho YouTube
+    speedIndicator.classList.remove('non-youtube');
+    const video = document.querySelector('video');
+    if (video) {
+      const videoRect = video.getBoundingClientRect();
+      const parent = video.parentElement;
+      const parentRect = parent.getBoundingClientRect();
+      speedIndicator.style.position = 'absolute';
+      speedIndicator.style.left = `${parentRect.left}px`;
+      speedIndicator.style.top = `${parentRect.top - speedIndicator.offsetHeight}px`;
+    }
+  } else {
+    // Cố định cho non-YouTube
+    speedIndicator.classList.add('non-youtube');
+    speedIndicator.style.position = 'fixed';
+    speedIndicator.style.left = '10px';
+    speedIndicator.style.top = '10px';
   }
 }
 

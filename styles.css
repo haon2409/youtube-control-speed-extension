@@ -60,3 +60,30 @@
 #speed-indicator button:active {
   background: rgba(255, 255, 255, 0.5);
 }
+
+/* Thêm kiểu cho non-youtube */
+#speed-indicator.non-youtube {
+  background-color: red;
+  color: white;
+}
+
+/* Đảm bảo các phần tử con kế thừa màu chữ trắng */
+#speed-indicator.non-youtube #speed-text,
+#speed-indicator.non-youtube button {
+  color: white;
+}
+
+/* Giữ màu nền và viền cho nút điều khiển */
+#speed-indicator.non-youtube button {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+#speed-indicator.non-youtube button:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+#speed-indicator.non-youtube button:active {
+  background: rgba(255, 255, 255, 0.5);
+}
