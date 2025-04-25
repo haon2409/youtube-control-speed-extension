@@ -108,7 +108,7 @@ function updateSpeedIndicatorPosition() {
 function checkLiveCatchUp(video) {
   if (currentSpeed <= 1) return;
 
-  const isLive = video.duration === Infinity || video.duration > 3600;
+  const isLive = video.duration === Infinity;
   if (!isLive) return;
 
   const buffered = video.buffered;
@@ -167,11 +167,14 @@ function monitorVideoChange() {
     if (currentSrc !== lastVideoSrc) {
       console.log(`Log: Video thay đổi (loadedmetadata) - Nguồn mới: ${currentSrc}`);
       lastVideoSrc = currentSrc;
-      updateSpeed(1);
-      checkLiveCatchUp(video);
-      updateSpeedIndicatorPosition();
+      setTimeout(() => {        
+          updateSpeed(1);
+          checkLiveCatchUp(video);
+          updateSpeedIndicatorPosition();    
+      }, 2000);
     }
   });
+  
 }
 
 window.addEventListener('load', () => {

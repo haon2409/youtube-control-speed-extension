@@ -1,18 +1,18 @@
 #speed-indicator {
-  position: absolute;
-  color: white;
-  font-size: 14px;
-  font-weight: bold;
-  background-color: var(--yt-spec-additive-background);
-  padding: 5px 0px 5px 7px;
-  border-radius: 8px;
-  z-index: 99999;
+  position: absolute!important;
+  color: white!important;
+  font-size: 14px!important;
+  font-weight: bold!important;
+  background-color: #0f0f0f!important;
+  padding: 5px 0px 5px 7px!important;
+  border-radius: 8px!important;
+  z-index: 99999!important;
   display: flex !important;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  transition: padding 0.2s ease;
-  white-space: nowrap; /* Ngăn nhảy dòng */
+  align-items: center!important;
+  gap: 8px!important;
+  cursor: pointer!important;
+  transition: padding 0.2s ease!important;
+  white-space: nowrap!important; /* Ngăn nhảy dòng */
 }
 
 #speed-indicator.fullscreen {
@@ -20,57 +20,57 @@
   top: 55px !important;
   left: 10px !important;
   display: flex !important;
-  z-index: 99999;
+  z-index: 99999!important;
 }
 
 #speed-indicator.non-youtube {
-  background-color: red;
-  padding: 5px;
+  background-color: red!important;
+  padding: 5px!important;
 }
 
 #speed-indicator.non-youtube #speed-text,
 #speed-indicator.non-youtube button {
-  color: white;
+  color: white!important;
 }
 
 #speed-indicator .controls {
-  width: 0;
-  overflow: hidden;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 5px;
-  transition: width 0.2s ease;
+  width: 0!important;
+  overflow: hidden!important;
+  display: flex!important;
+  flex-direction: row!important;
+  align-items: center!important;
+  gap: 5px!important;
+  transition: width 0.2s ease!important;
 }
 
 #speed-indicator:hover .controls {
-  width: 58px; /* Đủ chỗ cho 2 nút và gap */
+  width: 58px!important; /* Đủ chỗ cho 2 nút và gap */
 }
 
 #speed-indicator button {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: white;
-  font-size: 16px;
-  font-weight: bold;
-  width: 24px;
-  height: 24px;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  flex-shrink: 0; /* Ngăn nút co lại */
+  background: rgba(255, 255, 255, 0.1)!important;
+  border: 1px solid rgba(255, 255, 255, 0.3)!important;
+  color: white!important;
+  font-size: 16px!important;
+  font-weight: bold!important;
+  width: 24px!important;
+  height: 24px!important;
+  border-radius: 4px!important;
+  cursor: pointer!important;
+  transition: all 0.2s ease!important;
+  display: flex!important;
+  align-items: center!important;
+  justify-content: center!important;
+  padding: 0!important;
+  flex-shrink: 0!important; /* Ngăn nút co lại */
 }
 
 #speed-indicator button:hover {
-  background: rgba(255, 255, 255, 0.3);
-  color: white;
-  border-color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.3)!important;
+  color: white!important;
+  border-color: rgba(255, 255, 255, 0.6)!important;
 }
 
 #speed-indicator button:active {
-  background: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.5)!important;
 }
