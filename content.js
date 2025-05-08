@@ -163,6 +163,11 @@ function checkLiveCatchUp(video) {
 }
 
 document.addEventListener('keydown', (e) => {
+  // Kiểm tra nếu phần tử đang focus là input hoặc textarea
+  if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA' || document.activeElement.isContentEditable) {
+    return; // Không xử lý phím nếu đang nhập text
+  }
+
   const video = document.querySelector('video');
   if (!video) {
     console.log('Log: Không tìm thấy video khi nhấn phím');
