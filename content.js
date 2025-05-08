@@ -27,6 +27,10 @@ function updateSpeedIndicator() {
     const speedText = document.createElement('span');
     speedText.id = 'speed-text';
 
+    // Thêm phần tử hiển thị thời gian còn lại
+    const timeRemaining = document.createElement('span');
+    timeRemaining.id = 'time-remaining';
+
     const controls = document.createElement('div');
     controls.className = 'controls';
 
@@ -41,9 +45,9 @@ function updateSpeedIndicator() {
     controls.appendChild(decreaseBtn);
     controls.appendChild(increaseBtn);
     speedIndicator.appendChild(speedText);
+    speedIndicator.appendChild(timeRemaining); // Thêm timeRemaining
     speedIndicator.appendChild(controls);
 
-    // Thêm speedIndicator vào video parent (non-YouTube) hoặc body (YouTube)
     if (!isYouTube) {
       speedIndicator.classList.add('non-youtube');
       videoParent.style.position = 'relative';
@@ -65,9 +69,33 @@ function updateSpeedIndicator() {
 
   if (speedIndicator) {
     const speedText = speedIndicator.querySelector('#speed-text');
-    speedText.textContent = `${currentSpeed.toFixed(2)}`;
+    speedText.textContent = `${currentSpeed.toFixed(2)}x`;
+    updateTimeRemaining(); // Cập nhật thời gian còn lại
     updateSpeedIndicatorPosition();
     console.log(`Log: Cập nhật speed-indicator với tốc độ: ${currentSpeed.toFixed(2)}`);
+  }
+}
+
+function updateTimeRemaining() {
+  const video = document.querySelector('video');
+  const timeRemaining = document.getElementById('time-remaining');
+  if (video && timeRemaining && video.duration !== Infinity) {
+    const remaining = video.duration - video.currentTime;
+    const hours = Math.floor(remaining / 3600);
+    const minutes = Math.floor((remaining % 3600) / 60);
+    const seconds = Math.floor(remaining % 60);
+    
+    if (hours > 0) {
+      // Hiển thị giờ:phút:giây nếu có giờ
+      timeRemaining.textContent = `${hours.toString().padStart(2, '0')}:${minutes
+        .toString()
+        .padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    } else {
+      // Chỉ hiển thị phút:giây nếu không có giờ
+      timeRemaining.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+  } else if (timeRemaining) {
+    timeRemaining.textContent = ''; // Ẩn nếu là livestream
   }
 }
 
@@ -167,14 +195,18 @@ function monitorVideoChange() {
     if (currentSrc !== lastVideoSrc) {
       console.log(`Log: Video thay đổi (loadedmetadata) - Nguồn mới: ${currentSrc}`);
       lastVideoSrc = currentSrc;
-      setTimeout(() => {        
-          updateSpeed(1);
-          checkLiveCatchUp(video);
-          updateSpeedIndicatorPosition();    
+      setTimeout(() => {
+        updateSpeed(1);
+        checkLiveCatchUp(video);
+        updateSpeedIndicatorPosition();
       }, 2000);
     }
   });
-  
+
+  // Cập nhật thời gian còn lại mỗi khi video chạy
+  video.addEventListener('timeupdate', () => {
+    updateTimeRemaining();
+  });
 }
 
 window.addEventListener('load', () => {
