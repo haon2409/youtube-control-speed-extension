@@ -1,6 +1,80 @@
 let currentSpeed = 1;
 let lastSpeed = 1;
 let lastVideoSrc = '';
+let youTubeLiveState = undefined; // Lưu kết quả nhận diện livestream cho YouTube theo từng link
+
+// Phát hiện livestream cho YouTube dựa trên nhãn LIVE ở thanh điều khiển
+function isLiveLabelVisibleOnControls() {
+  // Chỉ kiểm tra nhãn LIVE đúng trên thanh điều khiển
+  // Selector hợp lệ duy nhất
+  const badgeCandidates = ['.ytp-chrome-bottom .ytp-live-badge'];
+
+  const isElVisible = (el) => {
+    if (!el) return false;
+    if (el.getAttribute('aria-hidden') === 'true') return false;
+    if (el.hidden === true) return false;
+    const rect = el.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return false;
+    const style = window.getComputedStyle(el);
+    if (!style) return false;
+    if (style.display === 'none' || style.visibility === 'hidden' || parseFloat(style.opacity || '1') === 0) return false;
+    return true;
+  };
+
+  const isAllowedLiveBadge = (el) => {
+    if (!el || !el.classList) return false;
+    // Bắt buộc có ytp-live-badge và một trong các class trạng thái bên dưới
+    const hasBase = el.classList.contains('ytp-live-badge');
+    const hasLiveState = el.classList.contains('ytp-live-badge-is-live') || el.classList.contains('ytp-live-badge-is-livehead');
+    return hasBase && hasLiveState;
+  };
+
+  for (const sel of badgeCandidates) {
+    const els = document.querySelectorAll(sel);
+    for (const el of els) {
+      if (!isElVisible(el)) continue;
+      if (!isAllowedLiveBadge(el)) continue;
+      const text = (el.textContent || '').trim().toUpperCase();
+      // Yêu cầu khớp chặt: chính xác là LIVE hoặc bắt đầu bằng LIVE
+      if (text === 'LIVE' || text.startsWith('LIVE ')) {
+        // Lưu vào window để popup có thể đọc thông tin debug qua response
+        window.__ytLiveDetect = {
+          matchedSelector: sel,
+          className: el.className || '',
+          text: (el.textContent || '').trim()
+        };
+        return true;
+      }
+    }
+  }
+  window.__ytLiveDetect = undefined;
+  return false;
+}
+
+// Helper: xác định có phải livestream không (YouTube dùng nhãn LIVE, trang khác fallback duration)
+function isLiveStream(video) {
+  const isYouTube = window.location.hostname.includes('youtube.com');
+  if (isYouTube) return !!youTubeLiveState;
+  // Với non-YouTube, giữ nguyên fallback cũ để không ảnh hưởng trang khác
+  return !!video && video.duration === Infinity;
+}
+
+// Đợi một chút để badge LIVE render rồi mới đọc, sau đó cập nhật UI liên quan
+function scheduleYouTubeLiveDetect(delayMs) {
+  if (!window.location.hostname.includes('youtube.com')) return;
+  setTimeout(() => {
+    try {
+      youTubeLiveState = isLiveLabelVisibleOnControls();
+      console.log(`Log: YouTube live state (delayed ${delayMs}ms) = ${youTubeLiveState}`);
+      // Cập nhật lại phần hiển thị phụ thuộc live state
+      updateTimeRemaining();
+      const video = document.querySelector('video');
+      if (video) checkLiveCatchUp(video);
+    } catch (e) {
+      youTubeLiveState = false;
+    }
+  }, Math.max(0, Number(delayMs) || 0));
+}
 
 function updateSpeed(speed) {
   const video = document.querySelector('video');
@@ -79,7 +153,8 @@ function updateSpeedIndicator() {
 function updateTimeRemaining() {
   const video = document.querySelector('video');
   const timeRemaining = document.getElementById('time-remaining');
-  if (video && timeRemaining && video.duration !== Infinity) {
+  const live = isLiveStream(video);
+  if (video && timeRemaining && !live) {
     const remaining = video.duration - video.currentTime;
     const hours = Math.floor(remaining / 3600);
     const minutes = Math.floor((remaining % 3600) / 60);
@@ -136,7 +211,7 @@ function updateSpeedIndicatorPosition() {
 function checkLiveCatchUp(video) {
   if (currentSpeed <= 1) return;
 
-  const isLive = video.duration === Infinity;
+  const isLive = isLiveStream(video);
   if (!isLive) return;
 
   const buffered = video.buffered;
@@ -200,6 +275,10 @@ function monitorVideoChange() {
     if (currentSrc !== lastVideoSrc) {
       console.log(`Log: Video thay đổi (loadedmetadata) - Nguồn mới: ${currentSrc}`);
       lastVideoSrc = currentSrc;
+      // Khi đổi link/video: xác định lại livestream sau 500ms cho YouTube
+      if (window.location.hostname.includes('youtube.com')) {
+        scheduleYouTubeLiveDetect(500);
+      }
       setTimeout(() => {
         updateSpeed(1);
         checkLiveCatchUp(video);
@@ -216,6 +295,11 @@ function monitorVideoChange() {
 
 window.addEventListener('load', () => {
   console.log('Log: Trang tải xong, khởi tạo tốc độ ban đầu');
+  // Xác định livestream cho YouTube đúng một lần khi vào trang
+  if (window.location.hostname.includes('youtube.com')) {
+    // Đợi 500ms để badge LIVE render rồi mới đọc
+    scheduleYouTubeLiveDetect(500);
+  }
   updateSpeed(1);
   lastVideoSrc = document.querySelector('video')?.currentSrc || window.location.href;
   monitorVideoChange();
