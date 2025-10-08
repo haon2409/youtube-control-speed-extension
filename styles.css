@@ -1,18 +1,31 @@
 #speed-indicator {
-  position: absolute !important;
+  position: fixed !important;
   color: white !important;
   font-size: 14px !important;
-  font-weight: bold !important;
-  background-color: #0f0f0f !important;
-  padding: 5px 7px 5px 7px !important; /* Điều chỉnh padding */
-  border-radius: 8px !important;
+  font-weight: 500 !important;
+  background-color: rgba(60, 60, 60, 0.95) !important;
+  backdrop-filter: blur(12px) !important;
+  padding: 8px 12px !important;
+  border-radius: 20px !important;
   z-index: 99999 !important;
   display: flex !important;
   align-items: center !important;
   gap: 8px !important;
   cursor: pointer !important;
-  transition: padding 0.2s ease !important;
+  transition: all 0.2s ease !important;
   white-space: nowrap !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+#speed-indicator:hover {
+  background-color: rgba(80, 80, 80, 0.95) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4) !important;
 }
 
 #speed-indicator.non-youtube #time-remaining {
@@ -25,6 +38,16 @@
   left: 10px !important;
   display: flex !important;
   z-index: 99999!important;
+}
+
+#speed-indicator.youtube-header {
+  position: fixed !important;
+  z-index: 99999 !important;
+  display: flex !important;
+  background-color: rgba(60, 60, 60, 0.95) !important;
+  backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
 }
 
 #speed-indicator.non-youtube {
@@ -52,27 +75,29 @@
 }
 
 #speed-indicator button {
-  background: rgba(255, 255, 255, 0.1)!important;
-  border: 1px solid rgba(255, 255, 255, 0.3)!important;
+  background: rgba(255, 255, 255, 0.15)!important;
+  border: 1px solid rgba(255, 255, 255, 0.2)!important;
   color: white!important;
-  font-size: 16px!important;
-  font-weight: bold!important;
-  width: 24px!important;
-  height: 24px!important;
-  border-radius: 4px!important;
+  font-size: 14px!important;
+  font-weight: 600!important;
+  width: 26px!important;
+  height: 26px!important;
+  border-radius: 13px!important;
   cursor: pointer!important;
   transition: all 0.2s ease!important;
   display: flex!important;
   align-items: center!important;
   justify-content: center!important;
   padding: 0!important;
-  flex-shrink: 0!important; /* Ngăn nút co lại */
+  flex-shrink: 0!important;
+  backdrop-filter: blur(8px)!important;
 }
 
 #speed-indicator button:hover {
-  background: rgba(255, 255, 255, 0.3)!important;
+  background: rgba(255, 255, 255, 0.25)!important;
   color: white!important;
-  border-color: rgba(255, 255, 255, 0.6)!important;
+  border-color: rgba(255, 255, 255, 0.4)!important;
+  transform: scale(1.05)!important;
 }
 
 #speed-indicator button:active {
@@ -80,8 +105,9 @@
 }
 
 #time-remaining {
-  color: white !important;
-  font-size: 14px !important;
-  font-weight: normal !important;
-  margin-left: 5px !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+  font-size: 12px !important;
+  font-weight: 400 !important;
+  margin-left: 6px !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
 }
