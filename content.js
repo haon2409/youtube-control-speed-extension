@@ -228,7 +228,7 @@ function checkLiveCatchUp(video) {
     const currentTime = video.currentTime;
     const timeToEnd = bufferedEnd - currentTime;
 
-    if (timeToEnd < 2) {
+    if (timeToEnd < 3) {
       console.log('Log: Livestream bắt kịp real-time, chuyển tốc độ về 1');
       updateSpeed(1);
     }
@@ -237,7 +237,7 @@ function checkLiveCatchUp(video) {
   video.addEventListener('timeupdate', function handler() {
     const bufferedEnd = video.buffered.end(video.buffered.length - 1);
     const timeToEnd = bufferedEnd - video.currentTime;
-    if (currentSpeed > 1 && timeToEnd < 2) {
+    if (currentSpeed > 1 && timeToEnd < 3) {
       console.log('Log: Livestream bắt kịp real-time (timeupdate), chuyển tốc độ về 1');
       updateSpeed(1);
       video.removeEventListener('timeupdate', handler);
