@@ -1,515 +1,293 @@
-let currentSpeed = 1;
-let lastSpeed = 1;
-let lastVideoSrc = '';
-let youTubeLiveState = undefined; // Lưu kết quả nhận diện livestream cho YouTube theo từng link
+// ==UserScript==
+// @name         YouTube Speed Control + Live Detection (Cleaned v3 - Fixed Fullscreen)
+// @namespace    http://tampermonkey.net/
+// @version      3.1
+// @description  Tăng/giảm tốc độ video YouTube, hiển thị indicator, tự về 1x khi catch up live. Fix fullscreen UI (nút dài, animation thiếu)
+// @author       Adapted & cleaned & fixed
+// @match        https://www.youtube.com/*
+// @grant        none
+// ==/UserScript==
 
-// Phát hiện livestream cho YouTube dựa trên nhãn LIVE ở thanh điều khiển
-function isLiveLabelVisibleOnControls() {
-  // Chỉ kiểm tra nhãn LIVE đúng trên thanh điều khiển
-  // Selector hợp lệ duy nhất
-  const badgeCandidates = ['.ytp-chrome-bottom .ytp-live-badge'];
-
-  const isElVisible = (el) => {
-    if (!el) return false;
-    if (el.getAttribute('aria-hidden') === 'true') return false;
-    if (el.hidden === true) return false;
-    const rect = el.getBoundingClientRect();
-    if (rect.width === 0 || rect.height === 0) return false;
-    const style = window.getComputedStyle(el);
-    if (!style) return false;
-    if (style.display === 'none' || style.visibility === 'hidden' || parseFloat(style.opacity || '1') === 0) return false;
-    return true;
-  };
-
-  const isAllowedLiveBadge = (el) => {
-    if (!el || !el.classList) return false;
-    // Bắt buộc có ytp-live-badge và một trong các class trạng thái bên dưới
-    const hasBase = el.classList.contains('ytp-live-badge');
-    const hasLiveState = el.classList.contains('ytp-live-badge-is-live') || el.classList.contains('ytp-live-badge-is-livehead');
-    return hasBase && hasLiveState;
-  };
-
-  for (const sel of badgeCandidates) {
-    const els = document.querySelectorAll(sel);
-    for (const el of els) {
-      if (!isElVisible(el)) continue;
-      if (!isAllowedLiveBadge(el)) continue;
-      const text = (el.textContent || '').trim().toUpperCase();
-      // Yêu cầu khớp chặt: chính xác là LIVE hoặc bắt đầu bằng LIVE
-      if (text === 'LIVE' || text.startsWith('LIVE ')) {
-        // Lưu vào window để popup có thể đọc thông tin debug qua response
-        window.__ytLiveDetect = {
-          matchedSelector: sel,
-          className: el.className || '',
-          text: (el.textContent || '').trim()
-        };
-        return true;
-      }
-    }
-  }
-  window.__ytLiveDetect = undefined;
-  return false;
-}
-
-// Helper: xác định có phải livestream không (YouTube dùng nhãn LIVE, trang khác fallback duration)
-function isLiveStream(video) {
-  const isYouTube = window.location.hostname.includes('youtube.com');
-  if (isYouTube) return !!youTubeLiveState;
-  // Với non-YouTube, giữ nguyên fallback cũ để không ảnh hưởng trang khác
-  return !!video && video.duration === Infinity;
-}
-
-// Đợi một chút để badge LIVE render rồi mới đọc, sau đó cập nhật UI liên quan
-function scheduleYouTubeLiveDetect(delayMs) {
-  if (!window.location.hostname.includes('youtube.com')) return;
-  setTimeout(() => {
-    try {
-      youTubeLiveState = isLiveLabelVisibleOnControls();
-      console.log(`Log: YouTube live state (delayed ${delayMs}ms) = ${youTubeLiveState}`);
-      // Cập nhật lại phần hiển thị phụ thuộc live state
-      updateTimeRemaining();
-      const video = document.querySelector('video');
-      if (video) checkLiveCatchUp(video);
-    } catch (e) {
-      youTubeLiveState = false;
-    }
-  }, Math.max(0, Number(delayMs) || 0));
-}
-
-function updateSpeed(speed) {
-  const video = document.querySelector('video');
-  if (video) {
-    video.playbackRate = speed;
-    currentSpeed = speed;
-    updateSpeedIndicator();
-    checkLiveCatchUp(video);
-  } else {
-    console.log('Log: Không tìm thấy video để cập nhật tốc độ');
-  }
-}
-
-function updateSpeedIndicator() {
-  let speedIndicator = document.getElementById('speed-indicator');
-  const isYouTube = window.location.hostname.includes('youtube.com');
-
-  // Tạo speed indicator nếu chưa có
-  if (!speedIndicator) {
-    speedIndicator = document.createElement('div');
-    speedIndicator.id = 'speed-indicator';
-
-    const speedText = document.createElement('span');
-    speedText.id = 'speed-text';
-
-    const timeRemaining = document.createElement('span');
-    timeRemaining.id = 'time-remaining';
-
-    const controls = document.createElement('div');
-    controls.className = 'controls';
-
-    const decreaseBtn = document.createElement('button');
-    decreaseBtn.textContent = '<';
-    decreaseBtn.onclick = () => updateSpeed(Math.max(0.25, currentSpeed - 0.25));
-
-    const increaseBtn = document.createElement('button');
-    increaseBtn.textContent = '>';
-    increaseBtn.onclick = () => updateSpeed(currentSpeed + 0.25);
-
-    controls.appendChild(decreaseBtn);
-    controls.appendChild(increaseBtn);
-    speedIndicator.appendChild(speedText);
-    speedIndicator.appendChild(timeRemaining);
-    speedIndicator.appendChild(controls);
-
-    // Luôn append vào body để đơn giản
-    document.body.appendChild(speedIndicator);
-
-    speedText.onclick = (e) => {
-      e.stopPropagation();
-      const newSpeed = currentSpeed === 1 ? lastSpeed : 1;
-      lastSpeed = currentSpeed;
-      updateSpeed(newSpeed);
-    };
-
-    console.log('Log: Tạo mới speed-indicator');
-  }
-
-  // Cập nhật nội dung
-  const speedText = speedIndicator.querySelector('#speed-text');
-  if (speedText) {
-    speedText.textContent = `${currentSpeed.toFixed(2)}x`;
-    updateTimeRemaining();
-  }
+(function() {
+    'use strict';
   
-  // Cập nhật vị trí
-  updateSpeedIndicatorPosition();
+    let currentSpeed = 1;
+    let lastSpeed = 1;
+    let lastVideoId = null;
+    let youTubeLiveState = false;
   
-  return true;
-}
-
-function updateTimeRemaining() {
-  const video = document.querySelector('video');
-  const timeRemaining = document.getElementById('time-remaining');
-  const live = isLiveStream(video);
-  if (video && timeRemaining && !live) {
-    const remaining = video.duration - video.currentTime;
-    const hours = Math.floor(remaining / 3600);
-    const minutes = Math.floor((remaining % 3600) / 60);
-    const seconds = Math.floor(remaining % 60);
-    
-    if (hours > 0) {
-      // Hiển thị giờ:phút:giây nếu có giờ
-      timeRemaining.textContent = `${hours.toString().padStart(2, '0')}:${minutes
-        .toString()
-        .padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    } else {
-      // Chỉ hiển thị phút:giây nếu không có giờ
-      timeRemaining.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    function isLiveStream() {
+        return !!document.querySelector(
+            '.ytp-live-badge[aria-disabled="false"], .ytp-live, yt-live-chat-renderer'
+        );
     }
-  } else if (timeRemaining) {
-    timeRemaining.textContent = ''; // Ẩn nếu là livestream
-  }
-}
-
-function updateSpeedIndicatorPosition() {
-  const speedIndicator = document.getElementById('speed-indicator');
-  if (!speedIndicator) return;
-
-  const isYouTube = window.location.hostname.includes('youtube.com');
-
-  // Đảm bảo speed indicator luôn hiển thị
-  speedIndicator.style.display = 'flex';
-  speedIndicator.style.visibility = 'visible';
-  speedIndicator.style.opacity = '1';
-  speedIndicator.style.zIndex = '99999';
-
-  if (isYouTube) {
-    speedIndicator.classList.remove('non-youtube');
-    
-    if (document.fullscreenElement) {
-      // Fullscreen: góc trên trái
-      speedIndicator.classList.remove('youtube-header');
-      speedIndicator.classList.add('fullscreen');
-    } else {
-      // Thường: kế bên logo YouTube
-      speedIndicator.classList.remove('fullscreen');
-      speedIndicator.classList.add('youtube-header');
-      
-      const logoElement = findYouTubeLogo();
-      if (logoElement) {
-        const logoRect = logoElement.getBoundingClientRect();
-        speedIndicator.style.left = `${logoRect.right + 20}px`;
-        speedIndicator.style.top = `${logoRect.top + (logoRect.height - speedIndicator.offsetHeight) / 2}px`;
-      }
+  
+    function scheduleYouTubeLiveDetect(delayMs) {
+        setTimeout(() => {
+            try {
+                youTubeLiveState = isLiveStream();
+                console.log(`Live state updated after ${delayMs}ms: ${youTubeLiveState}`);
+                updateTimeRemaining();
+                const video = document.querySelector('video');
+                if (video) checkLiveCatchUp(video);
+            } catch (e) {
+                youTubeLiveState = false;
+            }
+        }, Math.max(0, Number(delayMs) || 0));
     }
-  } else {
-    // Non-YouTube: trong video
-    speedIndicator.classList.add('non-youtube');
-    speedIndicator.classList.remove('youtube-header', 'fullscreen');
-    
-    const video = document.querySelector('video');
-    if (video && video.parentElement) {
-      video.parentElement.style.position = 'relative';
-      speedIndicator.style.position = 'absolute';
-      speedIndicator.style.left = '10px';
-      speedIndicator.style.top = '10px';
-    }
-  }
-}
-
-function checkLiveCatchUp(video) {
-  if (currentSpeed <= 1) return;
-
-  const isLive = isLiveStream(video);
-  if (!isLive) return;
-
-  const buffered = video.buffered;
-  if (buffered.length > 0) {
-    const bufferedEnd = buffered.end(buffered.length - 1);
-    const currentTime = video.currentTime;
-    const timeToEnd = bufferedEnd - currentTime;
-
-    if (timeToEnd < 3) {
-      console.log('Log: Livestream bắt kịp real-time, chuyển tốc độ về 1');
-      updateSpeed(1);
-    }
-  }
-
-  video.addEventListener('timeupdate', function handler() {
-    const bufferedEnd = video.buffered.end(video.buffered.length - 1);
-    const timeToEnd = bufferedEnd - video.currentTime;
-    if (currentSpeed > 1 && timeToEnd < 3) {
-      console.log('Log: Livestream bắt kịp real-time (timeupdate), chuyển tốc độ về 1');
-      updateSpeed(1);
-      video.removeEventListener('timeupdate', handler);
-    }
-  });
-}
-
-document.addEventListener('keydown', (e) => {
-  // Kiểm tra nếu phần tử đang focus là input hoặc textarea
-  if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA' || document.activeElement.isContentEditable) {
-    return; // Không xử lý phím nếu đang nhập text
-  }
-
-  const video = document.querySelector('video');
-  if (!video) {
-    console.log('Log: Không tìm thấy video khi nhấn phím');
-    return;
-  }
-
-  if (e.key === ']') {
-    updateSpeed(currentSpeed + 0.25);
-  } else if (e.key === '[') {
-    updateSpeed(Math.max(0.25, currentSpeed - 0.25));
-  } else if (e.key === '\\') {
-    const newSpeed = currentSpeed === 1 ? lastSpeed : 1;
-    lastSpeed = currentSpeed;
-    updateSpeed(newSpeed);
-  }
-});
-
-function monitorVideoChange() {
-  const video = document.querySelector('video');
-  if (!video) {
-    console.log('Log: Không tìm thấy video khi theo dõi');
-    setTimeout(monitorVideoChange, 1000);
-    return;
-  }
-
-  console.log('Log: Bắt đầu theo dõi thay đổi video');
-
-  video.addEventListener('loadedmetadata', () => {
-    const currentSrc = video.currentSrc || window.location.href;
-    if (currentSrc !== lastVideoSrc) {
-      console.log(`Log: Video thay đổi (loadedmetadata) - Nguồn mới: ${currentSrc}`);
-      lastVideoSrc = currentSrc;
-      // Khi đổi link/video: xác định lại livestream sau 500ms cho YouTube
-      if (window.location.hostname.includes('youtube.com')) {
-        scheduleYouTubeLiveDetect(500);
-      }
-      setTimeout(() => {
-        updateSpeed(1);
+  
+    // ────────────────────────────────────────────────
+    // Tốc độ & indicator
+    // ────────────────────────────────────────────────
+    function updateSpeed(speed) {
+        const video = document.querySelector('video');
+        if (!video) return;
+  
+        video.playbackRate = speed;
+        currentSpeed = speed;
+        updateSpeedIndicator();
         checkLiveCatchUp(video);
-        updateSpeedIndicatorPosition();
-      }, 2000);
     }
-  });
-
-  // Cập nhật thời gian còn lại mỗi khi video chạy
-  video.addEventListener('timeupdate', () => {
-    updateTimeRemaining();
-  });
-}
-
-// Biến để theo dõi trạng thái khởi tạo
-let speedIndicatorInitialized = false;
-let initializationInterval = null;
-let backupInterval = null;
-
-// Hàm tìm logo YouTube một cách thông minh
-function findYouTubeLogo() {
-  // Các selector có thể có cho logo YouTube
-  const logoSelectors = [
-    '#logo',
-    '#youtube-logo', 
-    '.ytd-logo',
-    'ytd-logo',
-    'a[href="/"]',
-    '[class*="logo"]',
-    'ytd-topbar-logo-renderer',
-    '#masthead-container a[href="/"]',
-    'ytd-masthead a[href="/"]'
-  ];
   
-  for (const selector of logoSelectors) {
-    const element = document.querySelector(selector);
-    if (element) {
-      const rect = element.getBoundingClientRect();
-      // Kiểm tra xem element có thực sự hiển thị không
-      if (rect.width > 0 && rect.height > 0) {
-        console.log(`Log: Tìm thấy YouTube logo với selector: ${selector}`);
-        return element;
-      }
-    }
-  }
+    function updateSpeedIndicator() {
+        let indicator = document.getElementById('speed-indicator');
+        if (!indicator) {
+            indicator = document.createElement('div');
+            indicator.id = 'speed-indicator';
   
-  console.log('Log: Không tìm thấy YouTube logo');
-  return null;
-}
-
-// Hàm debug để kiểm tra trạng thái hiển thị của speed indicator
-function debugSpeedIndicatorVisibility() {
-  const speedIndicator = document.getElementById('speed-indicator');
-  if (!speedIndicator) {
-    console.log('Log: Speed indicator không tồn tại trong DOM');
-    return;
-  }
+            const speedText = document.createElement('span');
+            speedText.id = 'speed-text';
   
-  const rect = speedIndicator.getBoundingClientRect();
-  const style = window.getComputedStyle(speedIndicator);
+            const timeRemaining = document.createElement('span');
+            timeRemaining.id = 'time-remaining';
   
-  console.log('Log: Speed indicator debug info:', {
-    exists: !!speedIndicator,
-    display: style.display,
-    visibility: style.visibility,
-    opacity: style.opacity,
-    position: style.position,
-    left: style.left,
-    top: style.top,
-    zIndex: style.zIndex,
-    rect: {
-      left: rect.left,
-      top: rect.top,
-      width: rect.width,
-      height: rect.height
-    },
-    isVisible: rect.width > 0 && rect.height > 0 && rect.top >= 0 && rect.left >= 0
-  });
-}
-
-// Hàm khởi tạo speed indicator đơn giản
-function initializeSpeedIndicator() {
-  if (speedIndicatorInitialized) {
-    return;
-  }
-
-  console.log('Log: Khởi tạo speed indicator');
-  updateSpeedIndicator();
-  updateSpeed(1);
+            const controls = document.createElement('div');
+            controls.className = 'controls';
   
-  const createdIndicator = document.getElementById('speed-indicator');
-  if (createdIndicator) {
-    console.log('Log: Speed indicator đã được tạo thành công');
-    speedIndicatorInitialized = true;
-    
-    // Dừng interval
-    if (initializationInterval) {
-      clearInterval(initializationInterval);
-      initializationInterval = null;
-    }
-    if (backupInterval) {
-      clearInterval(backupInterval);
-      backupInterval = null;
-    }
-  }
-}
-
-// Hàm khởi tạo với retry đơn giản
-function startSpeedIndicatorInitialization() {
-  if (speedIndicatorInitialized) {
-    return;
-  }
-
-  console.log('Log: Bắt đầu khởi tạo speed indicator');
-  initializeSpeedIndicator();
+            const dec = document.createElement('button');
+            dec.textContent = '<';
+            dec.onclick = () => updateSpeed(Math.max(0.25, currentSpeed - 0.25));
   
-  // Retry nếu chưa thành công
-  if (!speedIndicatorInitialized) {
-    initializationInterval = setInterval(() => {
-      if (speedIndicatorInitialized) {
-        clearInterval(initializationInterval);
-        initializationInterval = null;
-        return;
-      }
-      initializeSpeedIndicator();
-    }, 1000);
-    
-    // Dừng sau 10 giây
-    setTimeout(() => {
-      if (initializationInterval) {
-        clearInterval(initializationInterval);
-        initializationInterval = null;
-      }
-    }, 10000);
-  }
-}
-
-// Khởi tạo ngay khi DOM ready
-function initializeOnDOMReady() {
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeOnDOMReady);
-    return;
-  }
+            const inc = document.createElement('button');
+            inc.textContent = '>';
+            inc.onclick = () => updateSpeed(currentSpeed + 0.25);
   
-  console.log('Log: DOM ready, bắt đầu khởi tạo');
-  startSpeedIndicatorInitialization();
-}
-
-// Khởi tạo khi trang load hoàn toàn
-window.addEventListener('load', () => {
-  console.log('Log: Trang tải xong, khởi tạo tốc độ ban đầu');
-  // Xác định livestream cho YouTube đúng một lần khi vào trang
-  if (window.location.hostname.includes('youtube.com')) {
-    // Đợi 500ms để badge LIVE render rồi mới đọc
-    scheduleYouTubeLiveDetect(500);
-  }
+            controls.append(dec, inc);
+            indicator.append(speedText, timeRemaining, controls);
   
-  // Khởi tạo speed indicator
-  startSpeedIndicatorInitialization();
+            document.body.appendChild(indicator);
   
-  lastVideoSrc = document.querySelector('video')?.currentSrc || window.location.href;
-  monitorVideoChange();
-});
+            speedText.onclick = e => {
+                e.stopPropagation();
+                const newSpeed = currentSpeed === 1 ? lastSpeed : 1;
+                lastSpeed = currentSpeed;
+                updateSpeed(newSpeed);
+            };
+  
+            // CSS inline – đã fix fullscreen
+            const style = document.createElement('style');
+            style.textContent = `
+                div#speed-indicator {
+                all: unset !important;
+                position: fixed !important;
+                z-index: 2147483647 !important;
+                background: rgba(0, 0, 0, 0.8) !important;
+                color: #ffffff !important;
+                padding: 5px 12px !important;
+                border-radius: 7px !important;
+                font-family: Arial, sans-serif !important;
+                font-size: 13px !important;
+                display: flex !important;
+                flex-direction: row !important;      /* Ép nằm trên một hàng */
+                flex-wrap: nowrap !important;        /* Tuyệt đối không cho xuống dòng */
+                align-items: center !important;
+                gap: 8px !important;
+                user-select: none !important;
+                pointer-events: auto !important;
+                box-sizing: border-box !important;
+                transition: all 0.2s ease !important;
+                backdrop-filter: blur(4px) !important;
+                white-space: nowrap !important;      /* Chống ngắt dòng văn bản */
+            }
 
-// Khởi tạo ngay lập tức nếu DOM đã sẵn sàng
-initializeOnDOMReady();
+            div#speed-indicator .controls {
+                display: flex !important;
+                gap: 4px !important;
+                flex-shrink: 0 !important;           /* Không cho phép cụm nút bị co lại */
+            }
 
-// Backup: Kiểm tra mỗi 5 giây
-backupInterval = setInterval(() => {
-  const existingIndicator = document.getElementById('speed-indicator');
-  if (!existingIndicator) {
-    console.log('Log: Backup: Tạo lại speed indicator');
-    speedIndicatorInitialized = false;
-    startSpeedIndicatorInitialization();
-  }
-}, 5000);
+            div#speed-indicator button {
+                all: unset !important;
+                background: #444 !important;
+                color: white !important;
+                padding: 3px 0 !important;           /* Reset padding ngang */
+                width: 28px !important;              /* Dùng width cố định cho nút */
+                height: 22px !important;
+                border-radius: 4px !important;
+                cursor: pointer !important;
+                font-weight: bold !important;
+                font-size: 12px !important;
+                text-align: center !important;
+                display: flex !important;            /* Để căn giữa dấu < > */
+                justify-content: center !important;
+                align-items: center !important;
+                transition: all 0.15s ease !important;
+            }
 
-document.addEventListener('fullscreenchange', updateSpeedIndicatorPosition);
-
-window.addEventListener('resize', updateSpeedIndicatorPosition);
-
-// Cập nhật vị trí khi scroll (header YouTube có thể thay đổi) với throttling
-let scrollTimeout = null;
-window.addEventListener('scroll', () => {
-  const speedIndicator = document.getElementById('speed-indicator');
-  if (speedIndicator && !document.fullscreenElement && speedIndicator.classList.contains('youtube-header')) {
-    // Throttle scroll events để tránh lag
-    if (scrollTimeout) {
-      clearTimeout(scrollTimeout);
-    }
-    scrollTimeout = setTimeout(() => {
-      updateSpeedIndicatorPosition();
-    }, 16); // ~60fps
-  }
-});
-
-const observer = new MutationObserver(() => {
-  const video = document.querySelector('video');
-  if (video && !video.dataset.speedMonitored) {
-    video.dataset.speedMonitored = 'true';
-    console.log('Log: Phát hiện video mới trong DOM');
-    monitorVideoChange();
-    updateSpeedIndicatorPosition();
-    
-    // Reset trạng thái khởi tạo khi có video mới
-    speedIndicatorInitialized = false;
-    
-    // Restart backup interval nếu đã bị dừng
-    if (!backupInterval) {
-      backupInterval = setInterval(() => {
-        const existingIndicator = document.getElementById('speed-indicator');
-        if (!existingIndicator && !speedIndicatorInitialized) {
-          console.log('Log: Backup cuối cùng: Tạo speed indicator (kiểm tra mỗi 5s)');
-          speedIndicatorInitialized = false; // Reset để có thể tạo lại
-          startSpeedIndicatorInitialization();
+            div#speed-indicator button:hover {
+                background: #666 !important;
+                transform: scale(1.1) !important;
+            }   
+            `;
+            document.head.appendChild(style);
         }
-      }, 5000);
+  
+        indicator.querySelector('#speed-text').textContent = `${currentSpeed.toFixed(2)}x`;
+        updateTimeRemaining();
+        updateSpeedIndicatorPosition();
     }
-    
-    // Đảm bảo speed indicator được tạo khi phát hiện video mới
-    setTimeout(() => {
-      startSpeedIndicatorInitialization();
-    }, 100);
-  }
-});
-observer.observe(document.body, { childList: true, subtree: true });
+  
+    function updateTimeRemaining() {
+        const el = document.getElementById('time-remaining');
+        if (!el) return;
+  
+        const video = document.querySelector('video');
+        if (!video || youTubeLiveState) {
+            el.textContent = '';
+            return;
+        }
+  
+        const remain = video.duration - video.currentTime;
+        if (!isFinite(remain) || remain <= 0) {
+            el.textContent = '';
+            return;
+        }
+  
+        const m = Math.floor(remain / 60);
+        const s = Math.floor(remain % 60);
+        el.textContent = m < 60 ? `${m}:${s.toString().padStart(2,'0')}` : 
+            `${Math.floor(m/60)}:${(m%60).toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+    }
+  
+    function updateSpeedIndicatorPosition() {
+        const ind = document.getElementById('speed-indicator');
+        if (!ind) return;
+  
+        const isYT = location.hostname.includes('youtube.com');
+        if (!isYT) {
+            ind.classList.remove('youtube-header', 'fullscreen');
+            ind.style.position = 'absolute';
+            ind.style.left = '10px';
+            ind.style.top = '10px';
+            ind.style.right = '';
+            return;
+        }
+  
+        const logo = document.querySelector('#logo, ytd-logo, .ytd-logo, a[href="/"], #masthead-container a[href="/"]');
+        if (document.fullscreenElement) {
+            ind.classList.remove('youtube-header');
+            ind.classList.add('fullscreen');
+            ind.style.left = '';
+            ind.style.right = '16px';
+            ind.style.top = '16px';
+            ind.style.transform = 'none';
+        } else {
+            ind.classList.remove('fullscreen');
+            ind.classList.add('youtube-header');
+            if (logo) {
+                const r = logo.getBoundingClientRect();
+                ind.style.left = `${r.right + 16}px`;
+                ind.style.top = `${r.top + (r.height - ind.offsetHeight)/2}px`;
+                ind.style.right = '';
+                ind.style.transform = 'none';
+            } else {
+                ind.style.left = '80px';
+                ind.style.top = '56px';
+                ind.style.right = '';
+            }
+        }
+    }
+  
+    function checkLiveCatchUp(video) {
+        if (currentSpeed <= 1 || !youTubeLiveState) return;
+  
+        const handler = () => {
+            if (video.buffered.length === 0) return;
+            const end = video.buffered.end(video.buffered.length - 1);
+            if (end - video.currentTime < 3) {
+                updateSpeed(1);
+                video.removeEventListener('timeupdate', handler);
+            }
+        };
+  
+        video.addEventListener('timeupdate', handler);
+    }
+  
+    // ────────────────────────────────────────────────
+    // Khởi tạo cho video hiện tại
+    // ────────────────────────────────────────────────
+    function initializeCurrentVideo() {
+        const video = document.querySelector('video');
+        if (!video) return;
+  
+        updateSpeed(1);
+        updateSpeedIndicator();
+  
+        const timeHandler = () => {
+            if (!youTubeLiveState) updateTimeRemaining();
+        };
+        video.addEventListener('timeupdate', timeHandler);
+  
+        video.addEventListener('loadedmetadata', () => {
+            video.removeEventListener('timeupdate', timeHandler);
+        }, { once: true });
+    }
+  
+    // ────────────────────────────────────────────────
+    // Chạy logic mỗi video mới
+    // ────────────────────────────────────────────────
+    function runLogicOnce() {
+        const vid = new URLSearchParams(location.search).get('v');
+        if (!vid || vid === lastVideoId) return;
+  
+        lastVideoId = vid;
+  
+        setTimeout(() => {
+            scheduleYouTubeLiveDetect(600);
+            initializeCurrentVideo();
+        }, 800);
+    }
+  
+    // ────────────────────────────────────────────────
+    // Phím tắt
+    // ────────────────────────────────────────────────
+    document.addEventListener('keydown', e => {
+        if (['INPUT','TEXTAREA'].includes(document.activeElement?.tagName) || 
+            document.activeElement?.isContentEditable) return;
+  
+        if (e.key === ']')      updateSpeed(currentSpeed + 0.25);
+        else if (e.key === '[') updateSpeed(Math.max(0.25, currentSpeed - 0.25));
+        else if (e.key === '\\') {
+            const ns = currentSpeed === 1 ? lastSpeed : 1;
+            lastSpeed = currentSpeed;
+            updateSpeed(ns);
+        }
+    });
+  
+    // ────────────────────────────────────────────────
+    // Khởi động
+    // ────────────────────────────────────────────────
+    runLogicOnce();
+    window.addEventListener('yt-navigate-finish', runLogicOnce);
+    window.addEventListener('popstate', runLogicOnce);
+  
+    document.addEventListener('fullscreenchange', updateSpeedIndicatorPosition);
+    window.addEventListener('resize', updateSpeedIndicatorPosition);
+  
+    let scrollTimer;
+    window.addEventListener('scroll', () => {
+        clearTimeout(scrollTimer);
+        scrollTimer = setTimeout(updateSpeedIndicatorPosition, 100);
+    });
+  
+  })();
