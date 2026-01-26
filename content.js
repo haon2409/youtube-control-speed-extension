@@ -3,6 +3,7 @@
   
     let currentSpeed = 1, lastSpeed = 1, lastVideoId = null, youTubeLiveState = false, isInitialized = false, initInterval = null;
     let indicator = null;
+    let timeUpdateInterval = null; // Biến quản lý bộ đếm thời gian
   
     function isLiveStream() {
         return !!document.querySelector('.ytp-live-badge[aria-disabled="false"], .ytp-live, yt-live-chat-renderer');
@@ -79,7 +80,7 @@
         if (!el) return;
         const video = document.querySelector('video');
         if (!video || youTubeLiveState) return el.textContent = '';
-        const remain = video.duration - video.currentTime;
+        const remain = (video.duration - video.currentTime) / video.playbackRate; // Đã tính theo tốc độ đang phát
         if (!isFinite(remain) || remain <= 0) return el.textContent = '';
         const m = Math.floor(remain / 60), s = Math.floor(remain % 60);
         el.textContent = m < 60 ? `${m}:${s.toString().padStart(2,'0')}` : `${Math.floor(m/60)}:${(m%60).toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
@@ -101,9 +102,13 @@
         if (!video || isInitialized) return;
         isInitialized = true;
         updateSpeed(1);
-        const timeHandler = () => !youTubeLiveState && updateTimeRemaining();
-        video.addEventListener('timeupdate', timeHandler);
-        video.addEventListener('loadedmetadata', () => video.removeEventListener('timeupdate', timeHandler), { once: true });
+
+        // Tối ưu mục 4: Dùng Interval thay vì Event Listener liên tục
+        if (timeUpdateInterval) clearInterval(timeUpdateInterval);
+        timeUpdateInterval = setInterval(() => {
+            if (!youTubeLiveState) updateTimeRemaining();
+        }, 1000);
+
         if (initInterval) clearInterval(initInterval);
     }
   
@@ -118,6 +123,7 @@
     }
   
     function runLogicOnce() {
+        if (timeUpdateInterval) clearInterval(timeUpdateInterval);
         const isYouTube = /youtube\.com|youtu\.be/.test(location.hostname);
         if (isYouTube) {
             const vid = new URLSearchParams(location.search).get('v');
