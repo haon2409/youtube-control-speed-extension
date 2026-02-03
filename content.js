@@ -83,15 +83,27 @@
         const el = document.getElementById('time-remaining');
         if (!el) return;
         const video = document.querySelector('video');
-        if (!video || youTubeLiveState) return el.textContent = '';
+        if (!video || youTubeLiveState) {
+            el.textContent = '';
+            indicator?.classList.add('time-empty');
+            indicator?.classList.remove('time-short', 'time-long');
+            return;
+        }
         const remain = (video.duration - video.currentTime) / video.playbackRate; // Đã tính theo tốc độ đang phát
-        if (!isFinite(remain) || remain <= 0) return el.textContent = '';
+        if (!isFinite(remain) || remain <= 0) {
+            el.textContent = '';
+            indicator?.classList.add('time-empty');
+            indicator?.classList.remove('time-short', 'time-long');
+            return;
+        }
         const m = Math.floor(remain / 60), s = Math.floor(remain % 60);
         if (m < 60) {
+            indicator?.classList.remove('time-empty');
             indicator?.classList.add('time-short');
             indicator?.classList.remove('time-long');
             el.textContent = `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
         } else {
+            indicator?.classList.remove('time-empty');
             indicator?.classList.add('time-long');
             indicator?.classList.remove('time-short');
             const h = Math.floor(m / 60);

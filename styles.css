@@ -122,3 +122,8 @@
 #speed-indicator.time-long #time-remaining {
   min-width: 8ch !important;
 }
+
+#speed-indicator.time-empty #time-remaining {
+  min-width: 0 !important;
+  margin-left: 0 !important;
+}
