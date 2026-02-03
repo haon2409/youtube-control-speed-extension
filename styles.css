@@ -110,4 +110,15 @@
   font-weight: 400 !important;
   margin-left: 6px !important;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  font-variant-numeric: tabular-nums !important;
+  display: inline-block !important;
+  text-align: right !important;
+}
+
+#speed-indicator.time-short #time-remaining {
+  min-width: 5ch !important;
+}
+
+#speed-indicator.time-long #time-remaining {
+  min-width: 8ch !important;
 }

@@ -31,6 +31,7 @@
         if (indicator) return;
         indicator = document.createElement('div');
         indicator.id = 'speed-indicator';
+        indicator.classList.add('time-short');
   
         const speedText = document.createElement('span');
         speedText.id = 'speed-text';
@@ -64,6 +65,9 @@
             #speed-indicator .controls {display:flex!important;gap:5px!important;}
             #speed-indicator button {all:unset!important;background:#555!important;width:26px!important;height:22px!important;text-align:center!important;border-radius:4px!important;cursor:pointer!important;font-weight:bold!important;}
             #speed-indicator button:hover {background:#888!important;}
+            #time-remaining {font-variant-numeric:tabular-nums!important;display:inline-block!important;text-align:right!important;}
+            #speed-indicator.time-short #time-remaining {min-width:5ch!important;}
+            #speed-indicator.time-long #time-remaining {min-width:8ch!important;}
         `;
         document.head.appendChild(style);
     }
@@ -83,7 +87,16 @@
         const remain = (video.duration - video.currentTime) / video.playbackRate; // Đã tính theo tốc độ đang phát
         if (!isFinite(remain) || remain <= 0) return el.textContent = '';
         const m = Math.floor(remain / 60), s = Math.floor(remain % 60);
-        el.textContent = m < 60 ? `${m}:${s.toString().padStart(2,'0')}` : `${Math.floor(m/60)}:${(m%60).toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+        if (m < 60) {
+            indicator?.classList.add('time-short');
+            indicator?.classList.remove('time-long');
+            el.textContent = `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+        } else {
+            indicator?.classList.add('time-long');
+            indicator?.classList.remove('time-short');
+            const h = Math.floor(m / 60);
+            el.textContent = `${h.toString().padStart(2,'0')}:${(m%60).toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+        }
     }
   
     function checkLiveCatchUp(video) {
