@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { width: 180px; padding: 10px; font-family: sans-serif; }
+    .status-container { display: flex; justify-content: space-between; align-items: center; }
+    .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 20px; }
+    .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%; }
+    input:checked + .slider { background-color: #2196F3; }
+    input:checked + .slider:before { transform: translateX(20px); }
+    .domain { font-size: 10px; color: #666; margin-top: 8px; display: block; overflow: hidden; text-overflow: ellipsis; }
+  </style>
+</head>
+<body>
+  <div class="status-container">
+    <span>Extension:</span>
+    <label class="switch">
+      <input type="checkbox" id="toggle-status">
+      <span class="slider"></span>
+    </label>
+  </div>
+  <span id="domain-name" class="domain"></span>
+  <script src="popup.js"></script>
+</body>
+</html>
