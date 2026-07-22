@@ -39,35 +39,6 @@
             checkLiveCatchUp(video);
         }
 
-        function updateVolume() {
-            const el = document.getElementById('volume-display');
-            if (!el) return;
-
-            const video = document.querySelector('video');
-            if (!video) {
-                el.textContent = '';
-                return;
-            }
-
-            let volPercent = null;
-
-            // Đọc trực tiếp thuộc tính aria-valuenow từ thanh trượt giao diện YouTube
-            const ytSlider = document.querySelector('.ytp-volume-panel[role="slider"]');
-            if (ytSlider && ytSlider.hasAttribute('aria-valuenow')) {
-                volPercent = parseInt(ytSlider.getAttribute('aria-valuenow'), 10);
-            }
-
-            if (volPercent === null || isNaN(volPercent)) {
-                volPercent = Math.round(video.volume * 100);
-            }
-
-            if (video.muted || volPercent === 0) {
-                el.textContent = '🔇 0%';
-            } else {
-                el.textContent = `🔊 ${volPercent}%`;
-            }
-        }
-
         function createIndicator() {
             if (indicator) return;
             indicator = document.createElement('div');
@@ -86,9 +57,6 @@
             const timeRemaining = document.createElement('span');
             timeRemaining.id = 'time-remaining';
 
-            const volumeDisplay = document.createElement('span');
-            volumeDisplay.id = 'volume-display';
-
             const controls = document.createElement('div');
             controls.className = 'controls';
 
@@ -102,8 +70,8 @@
 
             controls.append(dec, inc);
 
-            // Thứ tự hiển thị: Speed -> Time -> Volume -> Controls (< >)
-            indicator.append(speedText, timeRemaining, volumeDisplay, controls);
+            // Thứ tự hiển thị: Speed -> Time -> Controls (< >)
+            indicator.append(speedText, timeRemaining, controls);
 
             const style = document.createElement('style');
             style.textContent = `
@@ -112,7 +80,6 @@
                 #speed-indicator button {all:unset!important;background:#555!important;width:26px!important;height:22px!important;text-align:center!important;border-radius:4px!important;cursor:pointer!important;font-weight:bold!important;}
                 #speed-indicator button:hover {background:#888!important;}
                 #time-remaining {font-variant-numeric:tabular-nums!important;display:inline-block!important;text-align:right!important;}
-                #volume-display {font-variant-numeric:tabular-nums!important;font-size:12px!important;color:rgba(255,255,255,0.8)!important;margin-left:4px!important;}
             `;
             document.head.appendChild(style);
         }
@@ -122,7 +89,6 @@
             if (!indicator.parentElement) document.body.appendChild(indicator);
             indicator.querySelector('#speed-text').textContent = `${currentSpeed.toFixed(2)}x`;
             updateTimeRemaining();
-            updateVolume();
         }
 
         function updateTimeRemaining() {
@@ -175,9 +141,6 @@
             timeUpdateInterval = setInterval(() => {
                 if (!youTubeLiveState) updateTimeRemaining();
             }, 1000);
-
-            updateVolume();
-            video.addEventListener('volumechange', updateVolume);
 
             if (initInterval) clearInterval(initInterval);
         }
