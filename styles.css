@@ -1,5 +1,7 @@
 #speed-indicator {
   position: fixed !important;
+  top: 10px !important; /* Bổ sung tọa độ gốc từ JS */
+  left: 200px !important; /* Bổ sung tọa độ gốc từ JS */
   color: white !important;
   font-size: 14px !important;
   font-weight: 500 !important;
@@ -26,80 +28,64 @@
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4) !important;
 }
 
+#speed-indicator.fullscreen {
+  top: 55px !important;
+  left: 10px !important;
+}
+
+#speed-indicator.non-youtube {
+  background-color: red !important;
+  padding: 5px !important;
+}
+
+#speed-indicator.non-youtube #speed-text,
+#speed-indicator.non-youtube button,
 #speed-indicator.non-youtube #time-remaining {
   color: white !important;
 }
 
-#speed-indicator.fullscreen {
-  position: fixed !important;
-  top: 55px !important;
-  left: 10px !important;
-  display: flex !important;
-  z-index: 99999!important;
-}
-
-#speed-indicator.youtube-header {
-  position: fixed !important;
-  z-index: 99999 !important;
-  display: flex !important;
-  background-color: rgba(60, 60, 60, 0.95) !important;
-  backdrop-filter: blur(12px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
-}
-
-#speed-indicator.non-youtube {
-  background-color: red!important;
-  padding: 5px!important;
-}
-
-#speed-indicator.non-youtube #speed-text,
-#speed-indicator.non-youtube button {
-  color: white!important;
-}
-
 #speed-indicator .controls {
-  width: 0!important;
-  overflow: hidden!important;
-  display: flex!important;
-  flex-direction: row!important;
-  align-items: center!important;
-  gap: 5px!important;
-  transition: width 0.2s ease!important;
+  width: 0 !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 5px !important;
+  transition: width 0.2s ease !important;
 }
 
 #speed-indicator:hover .controls {
-  width: 58px!important; /* Đủ chỗ cho 2 nút < > và gap */
+  width: 58px !important; 
 }
 
 #speed-indicator button {
-  background: rgba(255, 255, 255, 0.15)!important;
-  border: 1px solid rgba(255, 255, 255, 0.2)!important;
-  color: white!important;
-  font-size: 14px!important;
-  font-weight: 600!important;
-  width: 26px!important;
-  height: 26px!important;
-  border-radius: 13px!important;
-  cursor: pointer!important;
-  transition: all 0.2s ease!important;
-  display: flex!important;
-  align-items: center!important;
-  justify-content: center!important;
-  padding: 0!important;
-  flex-shrink: 0!important;
-  backdrop-filter: blur(8px)!important;
+  background: rgba(255, 255, 255, 0.15) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: white !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  width: 26px !important;
+  height: 26px !important;
+  border-radius: 13px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  flex-shrink: 0 !important;
+  backdrop-filter: blur(8px) !important;
 }
 
 #speed-indicator button:hover {
-  background: rgba(255, 255, 255, 0.25)!important;
-  color: white!important;
-  border-color: rgba(255, 255, 255, 0.4)!important;
-  transform: scale(1.05)!important;
+  background: rgba(255, 255, 255, 0.25) !important;
+  color: white !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
+  transform: scale(1.05) !important;
 }
 
 #speed-indicator button:active {
-  background: rgba(255, 255, 255, 0.5)!important;
+  background: rgba(255, 255, 255, 0.5) !important;
 }
 
 #time-remaining {

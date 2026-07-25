@@ -2,6 +2,8 @@
     'use strict';
 
     const currentDomain = window.location.hostname;
+    // Tái sử dụng biến currentDomain, tránh gọi lại location.hostname
+    const isYouTube = /youtube\.com|youtu\.be/.test(currentDomain);
 
     // 1. Kiểm tra trạng thái On/Off từ storage trước khi chạy logic chính
     chrome.storage.sync.get([currentDomain], (result) => {
@@ -44,6 +46,11 @@
             indicator = document.createElement('div');
             indicator.id = 'speed-indicator';
             indicator.classList.add('time-short');
+            
+            // Kích hoạt class CSS non-youtube nếu không ở trên YouTube
+            if (!isYouTube) {
+                indicator.classList.add('non-youtube');
+            }
 
             const speedText = document.createElement('span');
             speedText.id = 'speed-text';
@@ -69,19 +76,9 @@
             inc.onclick = () => updateSpeed(currentSpeed + 0.25);
 
             controls.append(dec, inc);
-
-            // Thứ tự hiển thị: Speed -> Time -> Controls (< >)
             indicator.append(speedText, timeRemaining, controls);
-
-            const style = document.createElement('style');
-            style.textContent = `
-                #speed-indicator {all:unset!important;position:fixed!important;top:45px!important;left:20px!important;z-index:2147483647!important;background:rgba(40,40,40,.9)!important;color:#fff!important;padding:6px 12px!important;border-radius:8px!important;font-family:sans-serif!important;font-size:14px!important;display:flex!important;align-items:center!important;gap:10px!important;box-shadow:0 4px 15px rgba(0,0,0,.5)!important;backdrop-filter:blur(5px)!important;cursor:move!important;visibility:visible!important;opacity:1!important;}
-                #speed-indicator .controls {display:flex!important;gap:5px!important;}
-                #speed-indicator button {all:unset!important;background:#555!important;width:26px!important;height:22px!important;text-align:center!important;border-radius:4px!important;cursor:pointer!important;font-weight:bold!important;}
-                #speed-indicator button:hover {background:#888!important;}
-                #time-remaining {font-variant-numeric:tabular-nums!important;display:inline-block!important;text-align:right!important;}
-            `;
-            document.head.appendChild(style);
+            
+            // Toàn bộ logic document.createElement('style') đã được xóa bỏ
         }
 
         function updateSpeedIndicator() {
@@ -148,6 +145,14 @@
         function handleFullscreenChange() {
             if (!indicator) return;
             const fsElement = document.fullscreenElement || document.mozFullScreenElement || document.webkitFullscreenElement || document.msFullscreenElement;
+            
+            // Đồng bộ class fullscreen với trạng thái hiển thị
+            if (fsElement) {
+                indicator.classList.add('fullscreen');
+            } else {
+                indicator.classList.remove('fullscreen');
+            }
+
             if (fsElement && fsElement !== document.body && !fsElement.contains(indicator)) {
                 fsElement.appendChild(indicator);
             } else if (!fsElement && indicator.parentElement !== document.body) {
@@ -157,7 +162,7 @@
 
         function runLogicOnce() {
             if (timeUpdateInterval) clearInterval(timeUpdateInterval);
-            const isYouTube = /youtube\.com|youtu\.be/.test(location.hostname);
+            
             if (isYouTube) {
                 const vid = new URLSearchParams(location.search).get('v');
                 if (!vid || vid === lastVideoId) return;
@@ -170,7 +175,19 @@
             
             if (!isYouTube && !document.querySelector('video')) {
                 if (initInterval) clearInterval(initInterval);
-                initInterval = setInterval(() => document.querySelector('video') && initializeCurrentVideo(), 500);
+                
+                // Khống chế vòng lặp để tránh rò rỉ bộ nhớ
+                let attempts = 0;
+                const maxAttempts = 20; 
+                
+                initInterval = setInterval(() => {
+                    attempts++;
+                    if (document.querySelector('video')) {
+                        initializeCurrentVideo();
+                    } else if (attempts >= maxAttempts) {
+                        clearInterval(initInterval); // Tự hủy sau 10 giây (20 * 500ms)
+                    }
+                }, 500);
             }
         }
 
