@@ -14,7 +14,6 @@
   flex-wrap: nowrap !important;
   width: max-content !important;
   align-items: center !important;
-  gap: 8px !important;
   cursor: pointer !important;
   white-space: nowrap !important;
   visibility: visible !important;
@@ -60,11 +59,17 @@
   flex-shrink: 0 !important;
   align-items: center !important;
   gap: 4px !important;
-  transition: width 0.2s ease !important;
+  margin-left: 0 !important;
+  transition: width 0.2s ease, margin-left 0.2s ease !important;
 }
 
 #speed-indicator:hover .controls {
   width: 58px !important; 
+  margin-left: 8px !important;
+}
+
+#speed-indicator.time-empty:hover .controls {
+  margin-left: 4px !important;
 }
 
 #speed-indicator button {
@@ -102,6 +107,7 @@
   font-variant-numeric: tabular-nums !important;
   display: inline-block !important;
   text-align: right !important;
+  margin-left: 8px !important;
 }
 
 #speed-indicator.time-short #time-remaining {
@@ -115,9 +121,9 @@
 #speed-indicator.time-empty #time-remaining {
   min-width: 0 !important;
   display: none !important;
+  margin-left: 0 !important;
 }
 
 #speed-indicator.time-empty {
-  gap: 4px !important;
-  padding-right: 8px !important;
+  padding: 8px 16px !important;
 }
