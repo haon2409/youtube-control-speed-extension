@@ -22,10 +22,13 @@
   border: none !important;
   box-shadow: none !important;
   font-family: "Roboto", "Arial", sans-serif !important;
+  transition: padding-right 0.2s ease !important;
 }
 
+/* Thu nhỏ padding lề phải khi hover để ôm vừa đường cong bo tròn */
 #speed-indicator:hover {
   background-color: rgba(255, 255, 255, 0.2) !important;
+  padding-right: 10px !important;
 }
 
 #speed-indicator.fullscreen {
@@ -41,7 +44,6 @@
 
 #speed-indicator.non-youtube {
   background-color: #cc0000 !important;
-  padding: 8px 16px !important;
 }
 
 #speed-indicator.non-youtube #speed-text,
@@ -63,8 +65,9 @@
   transition: width 0.2s ease, margin-left 0.2s ease !important;
 }
 
+/* Sửa width rộng đúng 56px (2 nút 26px + gap 4px) */
 #speed-indicator:hover .controls {
-  width: 58px !important; 
+  width: 56px !important; 
   margin-left: 8px !important;
 }
 
@@ -77,8 +80,6 @@
   background: transparent !important;
   border: none !important;
   color: #fff !important;
-  font-size: 14px !important;
-  font-weight: 600 !important;
   width: 26px !important;
   height: 26px !important;
   border-radius: 50% !important;
@@ -89,6 +90,13 @@
   justify-content: center !important;
   padding: 0 !important;
   flex-shrink: 0 !important;
+}
+
+/* Định dạng kích thước Icon SVG bên trong nút */
+#speed-indicator button svg {
+  width: 14px !important;
+  height: 14px !important;
+  pointer-events: none !important;
 }
 
 #speed-indicator button:hover {
@@ -122,8 +130,4 @@
   min-width: 0 !important;
   display: none !important;
   margin-left: 0 !important;
-}
-
-#speed-indicator.time-empty {
-  padding: 8px 16px !important;
 }
