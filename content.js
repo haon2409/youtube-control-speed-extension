@@ -2,13 +2,10 @@
     'use strict';
 
     const currentDomain = window.location.hostname;
-    // Tái sử dụng biến currentDomain, tránh gọi lại location.hostname
     const isYouTube = /youtube\.com|youtu\.be/.test(currentDomain);
 
-    // 1. Kiểm tra trạng thái On/Off từ storage trước khi chạy logic chính
     chrome.storage.sync.get([currentDomain], (result) => {
-        const isEnabled = result[currentDomain] || false;
-        if (isEnabled) {
+        if (result[currentDomain]) {
             initExtension();
         }
     });
@@ -17,8 +14,8 @@
         let currentSpeed = 1, lastSpeed = 1, lastVideoId = null, youTubeLiveState = false, isInitialized = false, initInterval = null;
         let indicator = null;
         let timeUpdateInterval = null;
+        let activeCatchUpHandler = null; // Quản lý listener để tránh rò rỉ bộ nhớ
 
-        // --- HÀM HỖ TRỢ ---
         function isLiveStream() {
             return !!document.querySelector('.ytp-live-badge[aria-disabled="false"], .ytp-live, yt-live-chat-renderer');
         }
@@ -29,7 +26,7 @@
                 updateTimeRemaining();
                 const video = document.querySelector('video');
                 if (video) checkLiveCatchUp(video);
-            }, Math.max(0, Number(delayMs) || 0));
+            }, delayMs || 0);
         }
 
         function updateSpeed(speed) {
@@ -47,7 +44,6 @@
             indicator.id = 'speed-indicator';
             indicator.classList.add('time-short');
             
-            // Kích hoạt class CSS non-youtube nếu không ở trên YouTube
             if (!isYouTube) {
                 indicator.classList.add('non-youtube');
             }
@@ -68,17 +64,15 @@
             controls.className = 'controls';
 
             const dec = document.createElement('button');
-            dec.textContent = '<';
+            dec.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>`;
             dec.onclick = () => updateSpeed(Math.max(0.25, currentSpeed - 0.25));
 
             const inc = document.createElement('button');
-            inc.textContent = '>';
+            inc.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>`;
             inc.onclick = () => updateSpeed(currentSpeed + 0.25);
 
             controls.append(dec, inc);
             indicator.append(speedText, timeRemaining, controls);
-            
-            // Toàn bộ logic document.createElement('style') đã được xóa bỏ
         }
 
         function updateSpeedIndicator() {
@@ -118,14 +112,21 @@
         }
 
         function checkLiveCatchUp(video) {
+            // Hủy listener cũ trước khi tạo listener mới
+            if (activeCatchUpHandler) {
+                video.removeEventListener('timeupdate', activeCatchUpHandler);
+                activeCatchUpHandler = null;
+            }
             if (currentSpeed <= 1 || !youTubeLiveState) return;
-            const handler = () => {
+
+            activeCatchUpHandler = () => {
                 if (video.buffered.length && video.buffered.end(video.buffered.length - 1) - video.currentTime < 3) {
                     updateSpeed(1);
-                    video.removeEventListener('timeupdate', handler);
+                    video.removeEventListener('timeupdate', activeCatchUpHandler);
+                    activeCatchUpHandler = null;
                 }
             };
-            video.addEventListener('timeupdate', handler);
+            video.addEventListener('timeupdate', activeCatchUpHandler);
         }
 
         function initializeCurrentVideo() {
@@ -144,9 +145,8 @@
 
         function handleFullscreenChange() {
             if (!indicator) return;
-            const fsElement = document.fullscreenElement || document.mozFullScreenElement || document.webkitFullscreenElement || document.msFullscreenElement;
+            const fsElement = document.fullscreenElement;
             
-            // Đồng bộ class fullscreen với trạng thái hiển thị
             if (fsElement) {
                 indicator.classList.add('fullscreen');
             } else {
@@ -175,8 +175,6 @@
             
             if (!isYouTube && !document.querySelector('video')) {
                 if (initInterval) clearInterval(initInterval);
-                
-                // Khống chế vòng lặp để tránh rò rỉ bộ nhớ
                 let attempts = 0;
                 const maxAttempts = 20; 
                 
@@ -185,7 +183,7 @@
                     if (document.querySelector('video')) {
                         initializeCurrentVideo();
                     } else if (attempts >= maxAttempts) {
-                        clearInterval(initInterval); // Tự hủy sau 10 giây (20 * 500ms)
+                        clearInterval(initInterval);
                     }
                 }, 500);
             }
@@ -203,9 +201,7 @@
             }
         });
 
-        ['fullscreenchange', 'mozfullscreenchange', 'webkitfullscreenchange', 'MSFullscreenChange'].forEach(event => {
-            document.addEventListener(event, handleFullscreenChange);
-        });
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
 
         runLogicOnce();
         window.addEventListener('yt-navigate-finish', runLogicOnce);
