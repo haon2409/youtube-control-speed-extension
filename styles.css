@@ -6,8 +6,8 @@
   color: #fff !important;
   font-size: 14px !important;
   font-weight: 600 !important;
-  background-color: rgba(255, 255, 255, 0.1) !important;
-  padding: 7px 10px !important;
+  background-color: rgba(255, 255, 255, 0.1) !important;  
+  padding: 7px 16px !important;
   border-radius: 9999px !important;
   z-index: 99999 !important;
   display: flex !important;
@@ -52,8 +52,7 @@
   flex-direction: row !important;
   flex-shrink: 0 !important;
   align-items: center !important;
-  gap: 4px !important;
-  margin-left: 0 !important;
+  gap: 4px !important;  
   transition: width 0.2s ease, margin-left 0.2s ease !important;
 }
 
