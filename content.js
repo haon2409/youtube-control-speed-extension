@@ -14,7 +14,12 @@
         let currentSpeed = 1, lastSpeed = 1, lastVideoId = null, youTubeLiveState = false, isInitialized = false, initInterval = null;
         let indicator = null;
         let timeUpdateInterval = null;
-        let activeCatchUpHandler = null; // Quản lý listener để tránh rò rỉ bộ nhớ
+        let activeCatchUpHandler = null; 
+
+        // Các biến ngoại suy Live Edge
+        let estimatedLiveEdge = null;
+        let lastTimeUpdated = 0;
+        let lastReportedLiveEdge = 0;
 
         function isLiveStream() {
             return !!document.querySelector('.ytp-live-badge[aria-disabled="false"], .ytp-live, yt-live-chat-renderer');
@@ -86,19 +91,53 @@
             const el = document.getElementById('time-remaining');
             if (!el) return;
             const video = document.querySelector('video');
-            if (!video || youTubeLiveState) {
+            
+            if (!video || isNaN(video.duration)) {
                 el.textContent = '';
                 indicator?.classList.add('time-empty');
                 return;
             }
-            const remain = (video.duration - video.currentTime) / video.playbackRate;
-            if (!isFinite(remain) || remain <= 0) {
+        
+            let remain = 0;
+            
+            if (youTubeLiveState) {
+                let reportedLiveEdge = video.duration - 3600;
+                let now = Date.now();
+                
+                if (estimatedLiveEdge === null || lastTimeUpdated === 0) {
+                    estimatedLiveEdge = reportedLiveEdge;
+                    lastReportedLiveEdge = reportedLiveEdge;
+                } else {
+                    let delta = (now - lastTimeUpdated) / 1000;
+                    if (delta > 2) delta = 1; 
+                    estimatedLiveEdge += delta;
+                    
+                    if (Math.abs(reportedLiveEdge - lastReportedLiveEdge) > 0.1) {
+                        estimatedLiveEdge = reportedLiveEdge;
+                        lastReportedLiveEdge = reportedLiveEdge;
+                    }
+                }
+                lastTimeUpdated = now;
+                
+                // Đã khôi phục phép chia tỷ lệ theo tốc độ (playbackRate)
+                remain = (estimatedLiveEdge - video.currentTime) / video.playbackRate;
+                
+                if (remain <= 1.5) remain = 0; 
+            } else {
+                remain = (video.duration - video.currentTime) / video.playbackRate;
+                estimatedLiveEdge = null;
+                lastTimeUpdated = 0;
+            }
+        
+            if (!isFinite(remain) || remain < 0) {
                 el.textContent = '';
                 indicator?.classList.add('time-empty');
                 return;
             }
+        
             const m = Math.floor(remain / 60), s = Math.floor(remain % 60);
             indicator?.classList.remove('time-empty');
+            
             if (m < 60) {
                 indicator?.classList.add('time-short');
                 indicator?.classList.remove('time-long');
@@ -112,7 +151,6 @@
         }
 
         function checkLiveCatchUp(video) {
-            // Hủy listener cũ trước khi tạo listener mới
             if (activeCatchUpHandler) {
                 video.removeEventListener('timeupdate', activeCatchUpHandler);
                 activeCatchUpHandler = null;
@@ -137,7 +175,7 @@
 
             if (timeUpdateInterval) clearInterval(timeUpdateInterval);
             timeUpdateInterval = setInterval(() => {
-                if (!youTubeLiveState) updateTimeRemaining();
+                updateTimeRemaining();
             }, 1000);
 
             if (initInterval) clearInterval(initInterval);
@@ -168,6 +206,11 @@
                 if (!vid || vid === lastVideoId) return;
                 lastVideoId = vid;
                 isInitialized = false;
+                
+                // Reset mốc dữ liệu khi chuyển sang video khác
+                estimatedLiveEdge = null;
+                lastTimeUpdated = 0;
+                lastReportedLiveEdge = 0;
             } else if (isInitialized) return;
             
             scheduleYouTubeLiveDetect(600);
@@ -189,7 +232,6 @@
             }
         }
 
-        // --- EVENT LISTENERS ---
         document.addEventListener('keydown', e => {
             if (/INPUT|TEXTAREA/.test(document.activeElement?.tagName) || document.activeElement?.isContentEditable) return;
             if (e.key === ']') updateSpeed(currentSpeed + 0.25);
