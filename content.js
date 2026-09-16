@@ -129,7 +129,7 @@
                 lastTimeUpdated = 0;
             }
         
-            if (!isFinite(remain) || remain < 0) {
+            if (!isFinite(remain) || remain < 0 || (youTubeLiveState && remain <= 0)) {
                 el.textContent = '';
                 indicator?.classList.add('time-empty');
                 return;
